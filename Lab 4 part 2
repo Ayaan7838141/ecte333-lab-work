@@ -1,0 +1,89 @@
+.include "m8515def.inc"  ; Include the atmega8515 definitions file
+.def temp = r16  ; define the temporary register
+.org $000  ; set address for RESET 
+rjmp RESET  ; jump to RESET 
+.org $001  ; set address for EXIT_INT0
+rjmp EXIT_INT0  ; jump to EXIT_INT0 
+
+.equ ONE = 0b00000110  ; define constants for displaying number 
+.equ FOUR = 0b01100110
+.equ SEVEN = 0b00000111
+.equ NULL = 0b00000000
+
+RESET:
+ldi temp, low(ramend)  ; initialize stack pointer
+out SPL, temp
+ldi temp, high(ramend)
+out SPH, temp
+
+ldi temp, 0b11111111  ; set Port A as output
+out DDRA, temp
+ldi temp, 0b00001111  ; set Port C as input
+out DDRC, temp
+clr temp
+out DDRD,temp  ; set Port D as input
+ldi temp, 0b11111111  
+out PORTD, temp ; initialize pull up resistor
+
+ldi temp, (1<<ISC01)|(1<<ISC11)  ; trigger on falling edge
+out MCUCR, temp
+clr temp
+out EMCUCR, temp
+ldi temp, (1<<INT0)|(1<<INT1)|(1<<INT2)  ; enable external interrupts INT0, INT1, and INT2
+out GICR, temp
+sei  ; enable global interrupts
+
+LOOP:
+sleep  
+rjmp LOOP  ; Loop back to sleep
+
+EXIT_INT0:
+clr temp
+out DDRC,temp  ; set Port C as output
+ldi temp, 0b11111111  ; set all pins of Port C high
+out PORTC,temp
+out DDRD,temp  ; set Port D as output
+clr temp
+out PORTD,temp  ; set all pins of Port D low
+nop ;delay
+nop
+in temp,PINC  ; read input from Port C
+andi temp, 0x0f  ; mask it for the lower 4 bits
+cpi temp,0b00000111  ; compare input with BUTTON1 
+breq BUTTON1  ; if equal, branch to BUTTON1
+cpi temp, 0b00001011  ; compare input with BUTTON4 
+breq BUTTON4  ; if equal, branch to BUTTON4
+cpi temp,0b00001101  ; compare input with BUTTON7 
+breq BUTTON7  ; if equal, branch to BUTTON7
+cpi temp,0b00001110  ; compare input with BUTTONSTAR 
+breq BUTTONSTAR  ; if equal,branch to BUTTONSTAR
+
+EXIT:
+clr temp  ; Clear temporary register
+out DDRD,temp  ; set Port D as input
+ldi temp, 0b11111111  ; set all pins of Port D high
+out PORTD,temp
+out DDRC,temp  ; set Port C as input
+clr temp
+out PORTC,temp  ; set all pins of Port C low
+reti  ; Return from interrupt
+
+BUTTON1:
+ldi temp,ONE  ; load pattern for number 1
+out PORTA,temp  
+rjmp EXIT  ; jump to EXIT
+
+BUTTON4:
+ldi temp,FOUR  ; load pattern for number 4
+out PORTA,temp  
+rjmp EXIT  ; jump to EXIT
+
+BUTTON7:
+ldi temp,SEVEN  ; load pattern for number 7
+out PORTA,temp  
+rjmp EXIT  ; jump to EXIT
+
+BUTTONSTAR:
+ldi temp,NULL  ; load pattern for null
+out PORTA,temp  
+rjmp EXIT  ; jump to EXIT
