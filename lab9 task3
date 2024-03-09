@@ -10,3 +10,27 @@ void timer_config(){
 
 int main(void)
 {
+#define F_CPU 1000000UL // define the value of the frequency as 1MHz
+#include <avr/io.h> // define the header file for input-output in avr
+#include <avr/interrupt.h> // define the header file for interrupts in avr
+
+void timer_config(){
+	TCCR1A = (1<<COM1A1); // output compare mode for channel B
+	TCCR1B = (1<<WGM13) | (1<<WGM12) | (1<<CS10); // no prescaler, internal clock, mode 12 CTC clear timer on compare match
+       }
+
+ISR(TIMER1_COMPA_vect){ 
+      PORTB = ~PORTB; // toggle port B 
+      } 
+
+int main(void)
+{
+    ICR1 = 3; // set the top value i.e. period to 3sec
+    DDRD = 0b00100000; //set pin D5 for OC1A
+    timer_config(); //configure timer 1
+    DDRB = 0xFF; // set port B for output
+    sei(); // enable the global interrupt
+    while(1)
+    {;}
+}
+
