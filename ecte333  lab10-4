@@ -1,0 +1,29 @@
+#include<avr/io.h>
+#include<avr/interrupt.h>
+
+void ADC_Config(){
+	ADMUX =  (1 << REFS0) | (1 << MUX2) | (1 << MUX1);
+	ADCSRA = (1 << ADEN) | (1 << ADPS1) | (1 << ADPS0) | (1 << ADIE);
+	SFIOR = (1 << ADTS1);
+}
+
+ISR(ADC_vect){
+	PORTB = ADCH;
+       GIFR = (1 << INT0);
+       
+}
+
+void int_config(){
+	MCUCR = (1<<ISC10); 
+}
+
+
+int main (){
+	DDRB = 0xFF;
+	ADC_Config();
+	int_config();
+	sei();
+       ADCSRA |= (1 << ADSC);
+	while(1){;}
+	return 0;
+}
